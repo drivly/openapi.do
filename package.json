@@ -23,6 +23,7 @@
   "dependencies": {
     "@openapi-contrib/openapi-schema-to-json-schema": "^3.2.0",
     "esbuild": "^0.16.10",
+    "openapi-typescript": "^6.1.0",
     "path-to-regexp": "^6.2.1"
   }
 }
