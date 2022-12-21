@@ -1,0 +1,28 @@
+{
+  "name": "openapi.do",
+  "version": "1.0.0",
+  "description": "Explore the API at: <https://templates.do/api>",
+  "main": "worker.js",
+  "type": "module",
+  "module": "./dist/index.mjs",
+  "scripts": {
+    "build": "esbuild ./src/worker.js --bundle --format=esm --outfile=dist/index.mjs  --loader:.html=text --define:process.env.HMAC_SECRET=\"'$( echo $HMAC_SECRET )'\"",
+    "dev": "npx miniflare@latest --watch",
+    "format": "prettier --write '**/*.{js,css,json,md}'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/drivly/openapi.do.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/drivly/openapi.do/issues"
+  },
+  "homepage": "https://github.com/drivly/openapi.do#readme",
+  "dependencies": {
+    "@openapi-contrib/openapi-schema-to-json-schema": "^3.2.0",
+    "esbuild": "^0.16.10",
+    "path-to-regexp": "^6.2.1"
+  }
+}
