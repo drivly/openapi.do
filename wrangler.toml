@@ -11,11 +11,22 @@ services = [
 
 workers_dev = false
 
+[durable_objects]
+bindings = [
+  { name = "StorageDurable", class_name = "StorageDurable"},
+]
+
+[[migrations]]
+tag = "v1" # Should be unique for each entry
+new_classes = ["StorageDurable"]
+
+
 [build]
 command = "npm run build"
  
 [build.upload]
 format = "modules"
+
 
 [miniflare]
 env_path = ".env"

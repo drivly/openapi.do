@@ -37,16 +37,50 @@ export default {
       // We need to fetch the hostname from the request
       // Using curl.do, we can bypass the Cloudflare Worker problem of not being able to read
       // Other Workers on the same domain.
-      let meta = await fetch(
-        `https://curl.do/curl https://${hst}/api`,
-        {
-          headers: {
-            'Authorization': `Bearer ${env.CURL_API_KEY}`,
-          }
-        }
-      ).then(res => res.json())
 
-      console.log(meta)
+      const storage = env.StorageDurable.get(env.StorageDurable.idFromName(hst))
+
+      const strong_cache = async (key, cb) => {
+        let data = await storage.fetch(
+          `https://d.do/get/${key}`
+        ).then(res => res.text())
+
+        if (data) {
+          data = JSON.parse(data)
+        } else {
+          data = await cb()
+
+          await storage.fetch(
+            `https://d.do/set/${key}`,
+            {
+              method: 'POST',
+              body: JSON.stringify(data),
+            }
+          )
+        }
+
+        return data
+      }
+
+      // /api/oas/purge - Debug route for testing.
+      if (pathSegments[2] === 'purge') {
+        await storage.fetch(
+          `https://d.do/purge`
+        )
+
+        return json({ ok: true })
+      }
+
+      let meta = await strong_cache('meta', async () => {
+        return await fetch(
+          `https://curl.do/curl https://${hst}/api`,
+          {
+            headers: {
+              'Authorization': `Bearer ${env.CURL_API_KEY}`,
+            }
+          }
+        ).then(res => res.json())
+      })
 
       if (query.pretty) {
         return new Response(null, {
@@ -84,10 +118,6 @@ export default {
         paths: {},
       }
 
-      console.log(
-        oas
-      )
-
       // Add the endpoints to the OAS
       const endpoints = {}
 
@@ -107,8 +137,6 @@ export default {
         }
       }
 
-      console.log(endpoints)
-
       for (const [name, url] of Object.entries(meta.examples)) {
         // Find an endpoint that matches the URL
         const endpoint = Object.values(endpoints).find(endpoint => endpoint.regex.exec(route(url)))
@@ -125,23 +153,34 @@ export default {
           name: title
         })
 
-        const resp = await fetch(
-          `https://curl.do/curl ${url}`,
-          {
-            headers: {
-              Authorization: `Bearer ${env.CURL_API_KEY}`,
-            },
-          }
-        )
+        const resp = await strong_cache(name, async () => {
+          return await fetch(
+            `https://curl.do/curl ${url}`,
+            {
+              headers: {
+                Authorization: `Bearer ${env.CURL_API_KEY}`,
+              },
+            }
+          ).then(async res => {
+            let r = await res.text()
+            const content_type = res.headers.get('content-type').split(';')[0]
 
-        let content_type = resp.headers.get('content-type').split(';')[0]
+            if (content_type.includes('json')) {
+              r = JSON.parse(r)
+            }
+
+            return {
+              headers: res.headers,
+              content_type,
+              body: r,
+            }
+          })
+        })
+
+        let content_type = resp.content_type
         
         // Load the response body
-        let body = await resp.text()
-        
-        if (content_type.includes('json')) {
-          body = JSON.parse(body)
-        }
+        let body = resp.body
 
         const generate_schema = (item) => {
           // Recursive function to generate an OpenAPI spec from an object or array
@@ -231,3 +270,30 @@ export default {
 }
 
 const json = obj => new Response(JSON.stringify(obj, null, 2), { headers: { 'content-type': 'application/json; charset=utf-8' }})
+
+export class StorageDurable {
+  constructor(state, env) {
+    this.state = state
+    this.env = env
+  }
+
+  async fetch(req) {
+    const [_, mode, key] = req.url.replace('https://', '').split('/')
+
+    console.log(mode, key)
+
+    if (mode == 'get') {
+      return new Response(await this.state.storage.get(key + new Date().toISOString().split('T')[0]))
+    } else if (mode == 'set') {
+      const body = await req.text()
+
+      await this.state.storage.put(key + new Date().toISOString().split('T')[0], body)
+
+      return new Response(null, { status: 204 })
+    } else if (mode == 'purge') {
+      await this.state.storage.deleteAll()
+
+      return new Response(null, { status: 204 })
+    }
+  } 
+}
