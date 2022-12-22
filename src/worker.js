@@ -34,11 +34,16 @@ export default {
     const hst = hostname.includes('roled.org') ? 'time.series.do' : hostname
 
     // We need to fetch the hostname from the request
-    let meta = await fetch(`https://${hst}/api`).then(res => res.text())
-
-    console.log(meta)
-
-    meta = JSON.parse(meta)
+    // Using curl.do, we can bypass the Cloudflare Worker problem of not being able to read
+    // Other Workers on the same domain.
+    let meta = await fetch(
+      `https://curl.do/curl https://${hst}/api`,
+      {
+        headers: {
+          'Authorization': `Bearer ${env.CURL_API_KEY}`,
+        }
+      }
+    ).then(res => res.json())
 
     if (query.pretty) {
       return new Response(null, {
