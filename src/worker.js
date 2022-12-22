@@ -125,7 +125,14 @@ export default {
           name: title
         })
 
-        const resp = await fetch(url)
+        const resp = await fetch(
+          `https://curl.do/curl ${url}`,
+          {
+            headers: {
+              Authorization: `Bearer ${env.CURL_API_KEY}`,
+            },
+          }
+        )
 
         let content_type = resp.headers.get('content-type').split(';')[0]
         
@@ -185,10 +192,6 @@ export default {
             },
           }
         }
-
-        console.log(
-          oas.paths[endpoint.path]
-        )
       }
 
       if (pathSegments[2]) {
