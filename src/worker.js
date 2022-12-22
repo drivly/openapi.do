@@ -46,6 +46,8 @@ export default {
         }
       ).then(res => res.json())
 
+      console.log(meta)
+
       if (query.pretty) {
         return new Response(null, {
           status: 302,
@@ -82,6 +84,10 @@ export default {
         paths: {},
       }
 
+      console.log(
+        oas
+      )
+
       // Add the endpoints to the OAS
       const endpoints = {}
 
@@ -100,6 +106,8 @@ export default {
           keys: k
         }
       }
+
+      console.log(endpoints)
 
       for (const [name, url] of Object.entries(meta.examples)) {
         // Find an endpoint that matches the URL
@@ -172,6 +180,10 @@ export default {
             },
           }
         }
+
+        console.log(
+          oas.paths[endpoint.path]
+        )
       }
 
       if (pathSegments[1] != 'oas') {
