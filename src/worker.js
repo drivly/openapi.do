@@ -1,6 +1,4 @@
 import { pathToRegexp, match, parse, compile }  from 'path-to-regexp'
-import toJSONSchema from '@openapi-contrib/openapi-schema-to-json-schema'
-//import openapiTS from 'openapi-typescript'
 
 export const api = {
   icon: '🚀',
@@ -36,7 +34,11 @@ export default {
     const hst = hostname.includes('roled.org') ? 'time.series.do' : hostname
 
     // We need to fetch the hostname from the request
-    const meta = await fetch(`https://${hst}/api`).then(res => res.json())
+    let meta = await fetch(`https://${hst}/api`).then(res => res.text())
+
+    console.log(meta)
+
+    meta = JSON.parse(meta)
 
     if (query.pretty) {
       return new Response(null, {
@@ -106,7 +108,7 @@ export default {
 
       const resp = await fetch(url)
 
-      let content_type = resp.headers.get('content-type')
+      let content_type = resp.headers.get('content-type').split(';')[0]
       
       // Load the response body
       let body = await resp.text()
@@ -181,9 +183,20 @@ export default {
         })
       }
 
-      console.log(endpoint)
+      // Convert the endpoint to JSON Schema.
+      // This should be pretty simple since we already have the OpenAPI spec
+
+      const schema = {
+        $schema: 'http://json-schema.org/draft-07/schema#',
+        $id: `https://${hostname}/${target}`,
+        title: `${target}`,
+        description: `Method ${target} on ${hostname}`,
+        type: 'object',
+        properties: oas.paths[endpoint.path].get.responses['200'].content['application/json'].schema.properties,
+      }
+
+      return json(schema)
     }
- 
 
     return new Response(JSON.stringify(oas, null, 2), { headers: { 'content-type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With' }})
   }
