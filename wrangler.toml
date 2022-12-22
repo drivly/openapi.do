@@ -18,6 +18,7 @@ command = "npm run build"
 format = "modules"
 
 [miniflare]
+env_path = ".env"
 kv_persist = "./data/"
 
 [miniflare.mounts]

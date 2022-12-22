@@ -191,9 +191,8 @@ export default {
         )
       }
 
-      if (pathSegments[1] != 'oas') {
+      if (pathSegments[2]) {
         const target = pathSegments[2] // Target is an endpoint name that we should convert to another language
-        const language = pathSegments[3] || 'ts' // Language is the language we should convert to
 
         const endpoint = Object.values(endpoints).find(endpoint => endpoint.name == target)
 
