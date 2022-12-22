@@ -113,6 +113,11 @@ export default {
         // Find an endpoint that matches the URL
         const endpoint = Object.values(endpoints).find(endpoint => endpoint.regex.exec(route(url)))
 
+        if (!endpoint) {
+          console.log(`No endpoint found for ${name}`)
+          continue
+        }
+
         // Convert name from camelCase to Title Case
         const title = name.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())
 
